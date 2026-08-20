@@ -1,0 +1,131 @@
+# json-lib continuous integration and tag-release template.
+#
+# The workflow validates every pull request and main push with the same C11 QG
+# sequence used locally. A tag matching vMAJOR.MINOR.PATCH[-PRERELEASE] runs the
+# identical checks first and then creates a GitHub Release containing the tested
+# distribution archive. The workflow becomes active only after this file is
+# reviewed, committed and pushed to origin.
+name: C11 quality gate and release
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - "v*"
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+# Prevent superseded pushes to the same branch or tag from consuming runners.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality-gate:
+    name: Strict C11 quality gate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out the exact reviewed ref
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Validate release tag against Semantic Versioning 2.0.0
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          semver='^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-([0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*))?(\+([0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*))?$'
+          if ! [[ "${RELEASE_TAG}" =~ ${semver} ]]; then
+            echo "Tag ${RELEASE_TAG} does not satisfy vMAJOR.MINOR.PATCH SemVer syntax"
+            exit 1
+          fi
+
+      - name: Install C11 quality dependencies
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install --yes build-essential cppcheck valgrind linux-tools-common
+
+      - name: Build a normal C11 object
+        run: make clean && make build CONFIG=release SAN=no
+
+      - name: Run deterministic and lifecycle tests
+        run: make test CONFIG=release SAN=no
+
+      - name: Run static analysis
+        run: make lint
+
+      - name: Run AddressSanitizer and UndefinedBehaviorSanitizer
+        run: make test_sanitize CONFIG=debug SAN=address
+
+      - name: Run Helgrind for all multithread test executables
+        run: make test_helgrind CONFIG=debug
+
+      - name: Build a normal distribution archive
+        run: make dist CONFIG=release SAN=no
+
+      - name: Verify distribution files and public exports
+        run: |
+          set -euo pipefail
+          test -f dist/include/json_lib.h
+          test -f dist/lib/libjson_lib.a
+          test "$(nm -g --defined-only dist/lib/libjson_lib.a | awk '{print $3}' | grep -c '^json_')" -eq 19
+          if nm -g --defined-only dist/lib/libjson_lib.a | awk '{print $3}' | grep -q '^jm_'; then
+            echo "Unexpected legacy jm_* export"
+            exit 1
+          fi
+
+      - name: Upload tested distribution
+        uses: actions/upload-artifact@v7
+        with:
+          name: json-lib-dist-${{ github.sha }}
+          path: dist
+          if-no-files-found: error
+
+  release:
+    name: Publish tested GitHub Release
+    needs: quality-gate
+    # Only an annotated/reviewed SemVer tag is allowed to publish a release.
+    if: >-
+      github.event_name == 'push' &&
+      startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download the quality-gated distribution
+        uses: actions/download-artifact@v7
+        with:
+          name: json-lib-dist-${{ github.sha }}
+          path: dist
+
+      - name: Package the distribution
+        id: package
+        run: |
+          set -euo pipefail
+          archive="json-lib-${{ github.ref_name }}.tar.gz"
+          tar -C dist -czf "${archive}" .
+          sha256sum "${archive}" > "${archive}.sha256"
+          echo "archive=${archive}" >> "${GITHUB_OUTPUT}"
+          echo "checksum=${archive}.sha256" >> "${GITHUB_OUTPUT}"
+
+      - name: Create GitHub Release from the annotated tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh release create "${{ github.ref_name }}" \
+            --title "json-lib ${{ github.ref_name }}" \
+            --verify-tag \
+            --generate-notes \
+            "${{ steps.package.outputs.archive }}" \
+            "${{ steps.package.outputs.checksum }}"
