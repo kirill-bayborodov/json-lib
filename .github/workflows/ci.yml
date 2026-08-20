@@ -102,6 +102,14 @@ jobs:
       contents: write
 
     steps:
+      # gh release create --verify-tag requires a local Git repository containing
+      # the exact immutable tag that triggered this job.
+      - name: Check out the exact release tag
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.ref }}
+          fetch-depth: 0
+
       - name: Download the quality-gated distribution
         uses: actions/download-artifact@v7
         with:

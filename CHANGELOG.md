@@ -4,6 +4,16 @@
 
 > **Правило источника.** Release-запись формируется из commit history, аннотированного Git-тега, результатов CI/QG и, при наличии, issue/PR references. Неподтверждённые результаты измерений или планы будущих версий в changelog не включаются.
 
+## [1.0.2] — 2026-08-20
+
+**Статус поставки:** patch release с исправлением автоматического GitHub Release path.
+
+### Fixed
+
+Release job теперь выполняет `actions/checkout` exact immutable tag ref с полной историей до скачивания quality-gated distribution artifact. Это создаёт локальный Git repository для `gh release create --verify-tag` и устраняет сбой `fatal: not a git repository` из tag-triggered pipeline `v1.0.1`.
+
+Теги `v1.0.0` и `v1.0.1` сохранены неизменными. `v1.0.2` является новой SemVer PATCH-поставкой, предназначенной для повторной проверяемой попытки автоматического GitHub Release.
+
 ## [1.0.1] — 2026-08-20
 
 **Статус поставки:** patch release с публикацией CI status badge и первым tag-triggered release pipeline.
@@ -73,5 +83,6 @@ Benchmark finished.
 
 На момент публикации `v1.0.0` в repository отсутствовали workflow files в `.github/workflows/`, а GitHub Actions не содержал workflow runs или иных обнаруженных runs для commit `38a21bc`. Следовательно, удалённый CI status для данного тега **не может быть заявлен как успешно пройденный**. Future-release CI templates добавлены локально отдельным изменением после `v1.0.0`; их необходимо закоммитить и опубликовать, после чего следующий release tag будет проверяться автоматически.
 
+[1.0.2]: https://github.com/kirill-bayborodov/json-lib/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/kirill-bayborodov/json-lib/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/kirill-bayborodov/json-lib/tree/v1.0.0
