@@ -64,6 +64,9 @@ dist/
 benchmarks/reports
 doc/report_bench_*.txt
 
+# Generated API documentation
+docs/generated/
+
 # Development files
 *.old
 *.rev*
