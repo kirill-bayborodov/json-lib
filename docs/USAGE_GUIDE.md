@@ -171,8 +171,8 @@ int main(void)
     json_document_t document;
     json_status_t status;
     size_t labels_index;
-    size_t first_label_index;
     size_t label_count;
+    size_t first_label_index = 0U;
     char *label = NULL;
     char error[256];
     int exit_code = EXIT_FAILURE;
@@ -189,7 +189,10 @@ int main(void)
     if (status == JSON_STATUS_SUCCESS) {
         status = json_array_size(&document, labels_index, &label_count);
     }
-    if (status == JSON_STATUS_SUCCESS && label_count > 0U) {
+    if (status == JSON_STATUS_SUCCESS && label_count == 0U) {
+        status = JSON_STATUS_NOT_FOUND;
+    }
+    if (status == JSON_STATUS_SUCCESS) {
         status = json_array_get(&document, labels_index, 0U, &first_label_index);
     }
     if (status == JSON_STATUS_SUCCESS) {
@@ -208,7 +211,7 @@ int main(void)
 }
 ```
 
-`json_token_copy_text()` returns an owned NUL-terminated allocation. Освобождайте её только через `json_memory_free()`, даже если subsequent document destroy уже завершился. Для string token returned text не содержит внешних JSON quotes, но сохраняет raw escape sequences; Unicode decoding и normalization не выполняются.
+`json_token_copy_text()` возвращает owned NUL-terminated allocation. Освобождайте её только через `json_memory_free()`, даже если `json_document_destroy()` уже завершился. Для string token returned text не содержит внешних JSON quotes, но сохраняет raw escape sequences; Unicode decoding и normalization не выполняются. Пустой array в этом примере явно преобразуется в `JSON_STATUS_NOT_FOUND`, поэтому `first_label_index` не читается до успешного `json_array_get()`.
 
 ## 6. File loading и diagnostics
 
@@ -246,7 +249,7 @@ int main(void)
 {
     json_writer_t writer = {0};
     json_status_t status;
-    char error[256];
+    char error[256] = {0};
     int exit_code = EXIT_FAILURE;
 
     status = json_writer_open("config.json", &writer, error, sizeof(error));
@@ -308,7 +311,7 @@ cc -std=c11 -Wall -Wextra -Werror -pedantic \
 
 ## 10. Генерируемая API documentation
 
-После публикации documentation workflow reference API будет доступна через GitHub Pages. Workflow собирает Doxygen из `Doxyfile` и публикует только static HTML artifact. До включения Pages локальную HTML documentation можно построить так:
+Documentation workflow генерирует Doxygen из `Doxyfile` и публикует только static HTML artifact через GitHub Pages после успешного repository-level deployment. До включения или проверки Pages локальную HTML documentation можно построить так:
 
 ```bash
 sudo apt-get update
