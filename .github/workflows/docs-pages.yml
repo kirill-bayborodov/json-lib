@@ -41,9 +41,13 @@ jobs:
       - name: Check out the exact documentation source
         uses: actions/checkout@v6
 
-      - name: Configure GitHub Pages metadata
+      # The repository may not yet have a Pages site. Explicit enablement creates
+      # it with GitHub Actions as the deployment source on the first successful run.
+      - name: Configure and enable GitHub Pages metadata
         id: pages
         uses: actions/configure-pages@v5
+        with:
+          enablement: true
 
       - name: Install Doxygen
         run: |
