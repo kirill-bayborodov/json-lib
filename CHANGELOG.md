@@ -4,6 +4,20 @@
 
 > **Правило источника.** Release-запись формируется из commit history, аннотированного Git-тега, результатов CI/QG и, при наличии, issue/PR references. Неподтверждённые результаты измерений или планы будущих версий в changelog не включаются.
 
+## [1.0.1] — 2026-08-20
+
+**Статус поставки:** patch release с публикацией CI status badge и первым tag-triggered release pipeline.
+
+### Changed
+
+README теперь отображает badge workflow `C11 quality gate and release` для ветки `main`. Badge ведёт на публичную страницу GitHub Actions workflow и отражает последний результат проверки default branch.
+
+### CI/CD
+
+Для будущих контрибьюторов опубликованный workflow запускается на каждом `pull_request`, нацеленном в `main`, а также на прямом push в `main`. Он выполняет strict C11 build, deterministic/lifecycle tests, cppcheck, ASan/UBSan, Helgrind, distribution и export audit до допуска изменения к merge/release review.
+
+Тег `v1.0.1` предназначен для первой фактической проверки tag-triggered пути: SemVer validation, quality gate, tested distribution archive, SHA-256 checksum и автоматическое создание GitHub Release.
+
 ## [1.0.0] — 2026-08-20
 
 **Тег:** [`v1.0.0`](https://github.com/kirill-bayborodov/json-lib/tree/v1.0.0)
@@ -59,4 +73,5 @@ Benchmark finished.
 
 На момент публикации `v1.0.0` в repository отсутствовали workflow files в `.github/workflows/`, а GitHub Actions не содержал workflow runs или иных обнаруженных runs для commit `38a21bc`. Следовательно, удалённый CI status для данного тега **не может быть заявлен как успешно пройденный**. Future-release CI templates добавлены локально отдельным изменением после `v1.0.0`; их необходимо закоммитить и опубликовать, после чего следующий release tag будет проверяться автоматически.
 
+[1.0.1]: https://github.com/kirill-bayborodov/json-lib/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/kirill-bayborodov/json-lib/tree/v1.0.0

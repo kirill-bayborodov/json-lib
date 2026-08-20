@@ -1,5 +1,7 @@
 # json-lib
 
+[![C11 quality gate and release](https://github.com/kirill-bayborodov/json-lib/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/kirill-bayborodov/json-lib/actions/workflows/ci.yml)
+
 `json-lib` — самостоятельная библиотека **ISO C11** для разбора JSON object-документов, безопасной навигации по плоскому массиву токенов, типизированного извлечения значений и атомарной записи JSON-файлов. Она не зависит от `benchmark-framework`, `bignum-lib` или сторонних JSON-библиотек; результатом `make dist` является статическая библиотека `libjson_lib.a`.
 
 Публичный контракт намеренно строгий: каждая библиотечная функция возвращает именованный `json_status_t`, а полезные данные передаются только через output-параметры. Предикаты используют `json_boolean_t`, выделенные строки освобождаются `json_memory_free()`, а файловая публикация выполняется через явную writer-transaction.
