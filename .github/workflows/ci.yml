@@ -82,12 +82,11 @@ jobs:
             exit 1
           fi
 
-      - name: Upload tested distribution
+      - name: Upload distribution artifact
         uses: actions/upload-artifact@v7
         with:
-          name: json-lib-dist-${{ github.sha }}
+          name: dist
           path: dist
-          if-no-files-found: error
 
   release:
     name: Publish tested GitHub Release
