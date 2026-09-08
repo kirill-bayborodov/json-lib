@@ -74,10 +74,10 @@ jobs:
       - name: Verify distribution files and public exports
         run: |
           set -euo pipefail
-          test -f dist/include/json_lib.h
-          test -f dist/lib/libjson_lib.a
-          test "$(nm -g --defined-only dist/lib/libjson_lib.a | awk '{print $3}' | grep -c '^json_')" -eq 19
-          if nm -g --defined-only dist/lib/libjson_lib.a | awk '{print $3}' | grep -q '^jm_'; then
+          test -f dist/json_lib.h
+          test -f dist/libjson_lib.a
+          test "$(nm -g --defined-only dist/libjson_lib.a | awk '{print $3}' | grep -c '^json_')" -eq 19
+          if nm -g --defined-only dist/libjson_lib.a | awk '{print $3}' | grep -q '^jm_'; then
             echo "Unexpected legacy jm_* export"
             exit 1
           fi
