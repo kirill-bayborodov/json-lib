@@ -10,7 +10,7 @@
 
 CONFIG ?= debug
 REPORT_NAME ?= current
-SAN ?= address
+SAN ?= no
 VALGRIND ?= valgrind
 PERF ?= /usr/local/bin/perf
 PERF_RUNS ?= 5
@@ -45,14 +45,12 @@ REPORTS_DIR = $(BENCH_DIR)/reports
 BUILD_DIR = build
 BIN_DIR = bin
 DIST_DIR = dist
-DIST_INCLUDE_DIR = $(DIST_DIR)/include
-DIST_LIB_DIR = $(DIST_DIR)/lib
 
 HEADER = $(INCLUDE_DIR)/$(LIB_NAME).h
 SOURCE = $(SRC_DIR)/$(LIB_NAME).c
 OBJ = $(BUILD_DIR)/$(LIB_NAME).o
-STATIC_LIB = $(DIST_LIB_DIR)/lib$(LIB_NAME).a
-SINGLE_HEADER = $(DIST_INCLUDE_DIR)/$(LIB_NAME).h
+STATIC_LIB = lib$(LIB_NAME).a
+SINGLE_HEADER = $(LIB_NAME).h
 TEST_SRCS := $(wildcard $(TESTS_DIR)/*.c)
 TEST_BINS := $(patsubst $(TESTS_DIR)/%.c,$(BIN_DIR)/%,$(TEST_SRCS))
 TEST_BINS_MT := $(filter $(BIN_DIR)/%_mt,$(TEST_BINS))
@@ -100,6 +98,7 @@ HELGRIND_CFLAGS = $(CFLAGS_BASE) -O1 -g -fno-omit-frame-pointer -march=x86-64
 # Build the library object with the selected CONFIG/SAN variables.
 all: build
 
+build: SAN=no
 build: $(OBJ)
 
 $(OBJ): $(SOURCE) $(HEADER) | $(BUILD_DIR)/.dir
@@ -114,7 +113,7 @@ $(BENCH_BIN): $(BENCH_SRC) $(OBJ) $(HEADER) | $(BIN_DIR)/.dir
 	$(CC) $(CFLAGS_BASE) -O2 -march=x86-64 $< $(OBJ) -o $@ $(LDFLAGS_BASE)
 
 # Create tracked directory sentinels without adding generated artifacts to Git.
-$(BUILD_DIR)/.dir $(BIN_DIR)/.dir $(REPORTS_DIR)/.dir $(DIST_INCLUDE_DIR)/.dir $(DIST_LIB_DIR)/.dir:
+$(BUILD_DIR)/.dir $(BIN_DIR)/.dir $(REPORTS_DIR)/.dir :
 	$(MKDIR) $(@D)
 	@touch $@
 
@@ -175,10 +174,11 @@ bench_stat: $(BENCH_BIN) | $(REPORTS_DIR)/.dir
 	@echo "Benchmark statistics: $(BENCH_STAT)"
 
 # Install the public header and archive without copying generated test artifacts.
-install: build | $(DIST_INCLUDE_DIR)/.dir $(DIST_LIB_DIR)/.dir
-	cp $(HEADER) $(SINGLE_HEADER)
-	$(AR) rcs $(STATIC_LIB) $(OBJ)
-	$(RL) $(STATIC_LIB)
+install: build 
+	$(MKDIR) $(DIST_DIR)
+	cp $(HEADER) $(DIST_DIR)/
+	$(AR) rcs $(DIST_DIR)/$(STATIC_LIB) $(OBJ)
+	$(RL) $(DIST_DIR)/$(STATIC_LIB)
 
 # Create a complete redistributable package from a clean build state.
 dist: clean install
